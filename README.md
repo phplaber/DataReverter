@@ -21,7 +21,7 @@
 5.  部署简单。
 
 ##### 缺点
-1.  只支持单表数据回滚；
+1.  只支持单库/单表数据回滚；
 2.  依赖memcache，如果缓存数据丢失，则数据不可回滚。
 
 #### 组成
@@ -71,37 +71,36 @@ public function actionStore()
 <?php
 
 public function actionRevert()
-    {
-        $response = $this->_packResponse(405, 'Method not allowed');
-        if (Yii::app()->request->getIsAjaxRequest()) {
-            $table = Yii::app()->request->getPost('table');
-            $type = Yii::app()->request->getPost('type');
-            $where = Yii::app()->request->getPost('where');
-            try {
-                if ($type == 'update') {
-                    Yii::app()->revert
-                        ->setTable($table)
-                        ->setWhere($where)
-                        ->setPk()
-                        ->revert();
-                } elseif ($type == 'delete') {
-                    Yii::app()->revert
-                        ->setTable($table)
-                        ->setPk()
-                        ->setPkRange($where)
-                        ->revert();
-                } else {
-                    // todo
-                }
-                $response = $this->_packResponse();
-            } catch (CException $e) {
-                $response = $this->_packResponse(500, $e->getMessage());
+{
+    $response = $this->_packResponse(405, 'Method not allowed');
+    if (Yii::app()->request->getIsAjaxRequest()) {
+        $table = Yii::app()->request->getPost('table');
+        $type = Yii::app()->request->getPost('type');
+        $where = Yii::app()->request->getPost('where');
+        try {
+            if ($type == 'update') {
+                Yii::app()->revert
+                    ->setTable($table)
+                    ->setWhere($where)
+                    ->setPk()
+                    ->revert();
+            } elseif ($type == 'delete') {
+                Yii::app()->revert
+                    ->setTable($table)
+                    ->setPk()
+                    ->setPkRange($where)
+                    ->revert();
+            } else {
+                // todo
             }
+            $response = $this->_packResponse();
+        } catch (CException $e) {
+            $response = $this->_packResponse(500, $e->getMessage());
         }
-
-        @header('Content-type: application/json');
-        exit(json_encode($response));
     }
+
+    @header('Content-type: application/json');        exit(json_encode($response));
+}
 ```
 
 *  封装响应数据方法
@@ -110,12 +109,12 @@ public function actionRevert()
 <?php
 
 private function _packResponse($code = 200, $msg = 'OK')
-    {
-        return array(
-            'code' => $code,
-            'message' => $msg
-        );
-    }
+{
+    return array(
+        'code' => $code,
+        'message' => $msg
+    );
+}
 ```
 
 #### 部署
@@ -125,10 +124,10 @@ private function _packResponse($code = 200, $msg = 'OK')
 <?php
 // ...
 'components' => array(
-        'revert' => array(
-            'class' => 'DataReverter',
-        ),
+    'revert' => array(
+        'class' => 'DataReverter',
     ),
+),
 // ...
 ```
 
