@@ -8,6 +8,7 @@ class DataReverter extends CApplicationComponent
     // 默认缓存生命周期
     public $defaultExpire = 10800;
     private $_cache = null;
+    private $_filecache = null;
     private $_table = '';
     private $_data  = array();
     private $_where = '';
@@ -20,6 +21,15 @@ class DataReverter extends CApplicationComponent
         parent::init();
         if ($this->_cache === null)
             $this->_cache = Yii::app()->memcache;
+
+        if ($this->_filecache === null) {
+            if (Yii::app()->hasComponent('cache') && ($cache = Yii::app()->getCache()) instanceof CFileCache) {
+                $this->_filecache = $cache;
+            } else {
+                $this->_filecache = new CFileCache;
+                $this->_filecache->init();
+            }
+        }
     }
 
     public function setTable($table = '')
@@ -95,6 +105,9 @@ QUERY;
     {
         if (!$this->_cache->set($this->getKey(), $this->_data, $this->defaultExpire))
             throw new CException('Memcache must be required');
+
+        // hack: use file for persistent cache
+        $this->_filecache->set($this->getKey(), $this->_data, 604800);
     }
 
     public function revert()
@@ -105,6 +118,7 @@ QUERY;
         $pk = $this->_pk;
         if (!empty($this->_where)) {
             $data = $this->_cache->get($this->getKey());
+            !$data && $data = $this->_filecache->get($this->getKey());
             if ($data === false)
                 throw new CException('Revert failed');
 
